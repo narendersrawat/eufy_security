@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import shutil
-
+from .eufy_security_api.camera import StreamStatus
 from collections.abc import Iterator
 import logging
 from pathlib import Path
@@ -129,7 +129,9 @@ class TalkbackSession:
 
     async def start(self) -> None:
         """Start the livestream and talkback session."""
-        await self._camera.start_livestream()
+        if self._camera.stream_status != StreamStatus.STREAMING:
+            await self._camera.start_livestream()
+
         await self._camera.start_talkback()
         await self._wait_until_started()
 
