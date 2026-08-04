@@ -61,6 +61,32 @@ def iter_adts_frames(data: bytes) -> Iterator[bytes]:
         yield data[offset:frame_end]
         offset = frame_end
 
+def _extract_next_adts_frame(data: bytes) -> tuple[bytes | None, bytes]:
+    """Extract one complete ADTS frame from buffered stream data."""
+    if len(data) < 7:
+        return None, data
+
+    if data[0] != 0xFF or (data[1] & 0xF6) != 0xF0:
+        raise InvalidAdtsStreamError("Invalid ADTS syncword in live stream")
+
+    protection_absent = data[1] & 0x01
+    header_length = 7 if protection_absent else 9
+
+    frame_length = (
+        ((data[3] & 0x03) << 11)
+        | (data[4] << 3)
+        | ((data[5] & 0xE0) >> 5)
+    )
+
+    if frame_length < header_length:
+        raise InvalidAdtsStreamError(
+            f"Invalid ADTS frame length: {frame_length}"
+        )
+
+    if len(data) < frame_length:
+        return None, data
+
+    return data[:frame_length], data[frame_length:]
 
 class TalkbackSession:
     """Play an AAC/ADTS file through a Eufy camera speaker."""
@@ -93,6 +119,37 @@ class TalkbackSession:
             try:
                 await self._wait_until_started()
                 await self._send_frames(frames)
+            finally:
+                try:
+                    await self._camera.stop_talkback()
+                except Exception:
+                    _LOGGER.exception("Unable to stop Eufy talkback")
+
+    async def play_stream(self, reader: asyncio.StreamReader) -> None:
+        """Forward a live AAC/ADTS byte stream to the camera speaker."""
+        async with self._play_lock:
+            await self._camera.start_talkback()
+
+            try:
+                await self._wait_until_started()
+
+                buffer = b""
+
+                while True:
+                    chunk = await reader.read(1024)
+
+                    if not chunk:
+                        break
+
+                    buffer += chunk
+
+                    while True:
+                        frame, buffer = _extract_next_adts_frame(buffer)
+
+                        if frame is None:
+                            break
+
+                        await self._camera.send_talkback_audio(frame)
             finally:
                 try:
                     await self._camera.stop_talkback()
