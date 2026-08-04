@@ -224,6 +224,18 @@ class Camera(Device):
         """Quick response message to camera"""
         await self.api.quick_response(self.product_type, self.serial_no, voice_id)
 
+    async def start_talkback(self) -> None:
+        """Start talkback on camera."""
+        await self.api.start_talkback(self.product_type, self.serial_no)
+
+    async def stop_talkback(self) -> None:
+        """Stop talkback on camera."""
+        await self.api.stop_talkback(self.product_type, self.serial_no)
+
+    async def is_talkback_ongoing(self) -> bool:
+        """Return whether talkback is active."""
+        return await self.api.is_talkback_ongoing(self.product_type,self.serial_no,)
+
     @property
     def is_rtsp_supported(self) -> bool:
         """Returns True if camera supports RTSP stream"""

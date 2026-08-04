@@ -64,6 +64,8 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
     platform.async_register_entity_service("trigger_camera_alarm_with_duration", Schema.TRIGGER_ALARM_SERVICE_SCHEMA.value, "_async_alarm_trigger")
     platform.async_register_entity_service("reset_alarm", {}, "_async_reset_alarm")
     platform.async_register_entity_service("quick_response", Schema.QUICK_RESPONSE_SERVICE_SCHEMA.value, "_async_quick_response")
+    platform.async_register_entity_service("start_talkback",Schema.START_TALKBACK_SERVICE_SCHEMA.value,"_async_start_talkback",)
+    platform.async_register_entity_service("stop_talkback",Schema.STOP_TALKBACK_SERVICE_SCHEMA.value,"_async_stop_talkback",)
     platform.async_register_entity_service("snooze", Schema.SNOOZE.value, "_snooze")
 
 
@@ -244,6 +246,14 @@ class EufySecurityCamera(Camera, EufySecurityEntity):
 
     async def _async_quick_response(self, voice_id: int) -> None:
         await self.product.quick_response(voice_id)
+
+    async def _async_start_talkback(self) -> None:
+        await self.product.start_talkback()
+        self.async_write_ha_state()
+
+    async def _async_stop_talkback(self) -> None:
+        await self.product.stop_talkback()
+        self.async_write_ha_state()
 
     async def _snooze(self, snooze_time: int, snooze_chime: bool, snooze_motion: bool, snooze_homebase: bool) -> None:
         await self.product.snooze(snooze_time, snooze_chime, snooze_motion, snooze_homebase)

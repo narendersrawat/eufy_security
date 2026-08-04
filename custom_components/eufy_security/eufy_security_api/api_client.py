@@ -239,6 +239,18 @@ class ApiClient:
         """Process stop p2p livestream call"""
         await self._send_message_get_response(OutgoingMessage(OutgoingMessageType.stop_livestream, serial_no=serial_no))
 
+    async def start_talkback(self, product_type: ProductType, serial_no: str) -> None:
+        """Process start talkback call"""
+        await self._send_message_get_response(OutgoingMessage(OutgoingMessageType.start_talkback,serial_no=serial_no,))
+
+    async def stop_talkback(self, product_type: ProductType, serial_no: str) -> None:
+        """Process stop talkback call"""
+        await self._send_message_get_response(OutgoingMessage(OutgoingMessageType.stop_talkback,serial_no=serial_no,))
+
+    async def is_talkback_ongoing(self,product_type: ProductType,serial_no: str,) -> bool:
+        result = await self._send_message_get_response(OutgoingMessage(OutgoingMessageType.is_talkback_ongoing,serial_no=serial_no,))
+        return result["talkbackOngoing"]
+
     async def _get_is_p2p_streaming(self, product_type: ProductType, serial_no: str) -> bool:
         result = await self._send_message_get_response(OutgoingMessage(OutgoingMessageType.is_livestreaming, serial_no=serial_no))
         return result[MessageField.LIVE_STREAMING.value]

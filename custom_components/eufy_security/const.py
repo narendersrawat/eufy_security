@@ -45,6 +45,8 @@ class Schema(Enum):
     PRESET_POSITION_SERVICE_SCHEMA = make_entity_service_schema({vol.Required("position"): cv.Number})
     TRIGGER_ALARM_SERVICE_SCHEMA = make_entity_service_schema({vol.Required("duration"): cv.Number})
     QUICK_RESPONSE_SERVICE_SCHEMA = make_entity_service_schema({vol.Required("voice_id"): cv.Number})
+    START_TALKBACK_SERVICE_SCHEMA = make_entity_service_schema({})
+    STOP_TALKBACK_SERVICE_SCHEMA = make_entity_service_schema({})
     CHIME_SERVICE_SCHEMA = make_entity_service_schema({vol.Required("ringtone"): cv.Number})
     SNOOZE = make_entity_service_schema(
         {

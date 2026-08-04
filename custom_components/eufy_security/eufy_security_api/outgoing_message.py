@@ -32,7 +32,6 @@ class OutgoingMessageToParameter(Enum):
 
 class OutgoingMessageType(Enum):
     """Outgoing message types"""
-
     # server level commands
     start_listening = {MessageField.DUMMY: auto(), MessageField.DOMAIN: EventSourceType.server}
     set_api_schema = {MessageField.DUMMY: auto(), MessageField.DOMAIN: EventSourceType.server, MessageField.SCHEMA_VERSION: None}
@@ -76,6 +75,9 @@ class OutgoingMessageType(Enum):
     start_livestream = {MessageField.DUMMY: auto(), MessageField.DOMAIN: EventSourceType.device}
     stop_livestream = {MessageField.DUMMY: auto(), MessageField.DOMAIN: EventSourceType.device}
     is_livestreaming = {MessageField.DUMMY: auto(), MessageField.DOMAIN: EventSourceType.device}
+    start_talkback = {MessageField.DUMMY: auto(), MessageField.DOMAIN: EventSourceType.device}
+    stop_talkback = {MessageField.DUMMY: auto(), MessageField.DOMAIN: EventSourceType.device}
+    is_talkback_ongoing = {MessageField.DUMMY: auto(), MessageField.DOMAIN: EventSourceType.device}
     get_voices = {MessageField.DUMMY: auto(), MessageField.DOMAIN: EventSourceType.device}
     quick_response = {MessageField.DUMMY: auto(), MessageField.DOMAIN: EventSourceType.device, MessageField.VOICE_ID: None}
     snooze = {

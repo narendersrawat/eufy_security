@@ -233,6 +233,22 @@ quick_response:
           min: 0
           max: 999999
 
+start_talkback:
+  name: Start talkback
+  description: Start a talkback session for the selected Eufy camera.
+  target:
+    entity:
+      domain: camera
+      integration: eufy_security
+
+stop_talkback:
+  name: Stop talkback
+  description: Stop the active talkback session for the selected Eufy camera.
+  target:
+    entity:
+      domain: camera
+      integration: eufy_security
+
 reset_alarm:
   name: Reset Alarm for Alarm Panel
   description: Reset Alarm for Alarm Panel
