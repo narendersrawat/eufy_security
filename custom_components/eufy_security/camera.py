@@ -31,7 +31,7 @@ from .eufy_security_api.util import wait_for_value_to_equal
 
 from pathlib import Path
 from homeassistant.exceptions import HomeAssistantError
-from .talkback import InvalidAdtsStreamError, TalkbackFilePlayer
+from .talkback import InvalidAdtsStreamError, TalkbackSession
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
@@ -291,10 +291,10 @@ class EufySecurityCamera(Camera, EufySecurityEntity):
         if not file_path.is_file():
             raise HomeAssistantError(f"Talkback file does not exist: {file_path}")
 
-        player = TalkbackFilePlayer(self.product)
+        session = TalkbackSession(self.product)
 
         try:
-            await player.play(file_path)
+            await session.play_file(file_path)
         except InvalidAdtsStreamError as err:
             raise HomeAssistantError(
                 f"Invalid AAC/ADTS talkback file: {err}"

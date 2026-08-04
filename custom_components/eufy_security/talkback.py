@@ -62,7 +62,7 @@ def iter_adts_frames(data: bytes) -> Iterator[bytes]:
         offset = frame_end
 
 
-class TalkbackFilePlayer:
+class TalkbackSession:
     """Play an AAC/ADTS file through a Eufy camera speaker."""
 
     def __init__(self, camera: Any) -> None:
@@ -70,21 +70,22 @@ class TalkbackFilePlayer:
         self._camera = camera
         self._play_lock = asyncio.Lock()
 
-    async def play(self, file_path: Path) -> None:
-        """Start talkback and send a prerecorded AAC/ADTS file."""
+    async def play_file(self, file_path: Path) -> None:
+        """Play an AAC/ADTS file through a Eufy camera speaker."""
+        audio_data = await asyncio.to_thread(file_path.read_bytes)
+        await self.play_frames(iter_adts_frames(audio_data))
+
+    async def play_frames(self, frames: Iterator[bytes]) -> None:
+        """Play an iterator of AAC/ADTS frames through the camera speaker."""
         async with self._play_lock:
-            audio_data = await asyncio.to_thread(file_path.read_bytes)
-            frames = list(iter_adts_frames(audio_data))
+            frames = list(frames)
 
             if not frames:
-                raise InvalidAdtsStreamError(
-                    f"No AAC/ADTS frames found in {file_path}"
-                )
+                raise InvalidAdtsStreamError("No AAC/ADTS frames found")
 
             _LOGGER.debug(
-                "Starting talkback playback: %s frames from %s",
+                "Starting talkback playback: %s frames",
                 len(frames),
-                file_path,
             )
 
             await self._camera.start_talkback()
