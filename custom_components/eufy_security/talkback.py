@@ -117,33 +117,40 @@ class TalkbackSession:
                 len(frames),
             )
 
-            await self._camera.start_talkback()
+            await self.start()
 
             try:
-                await self._wait_until_started()
                 await self._send_frames(frames)
             finally:
                 try:
-                    await self._camera.stop_talkback()
+                    await self.stop()
                 except Exception:
-                    _LOGGER.exception("Unable to stop Eufy talkback")
+                    _LOGGER.exception("Unable to stop Eufy talkback session")
+
+    async def start(self) -> None:
+        """Start the livestream and talkback session."""
+        await self._camera.start_livestream()
+        await self._camera.start_talkback()
+        await self._wait_until_started()
+
+    async def stop(self) -> None:
+        """Stop the talkback and livestream session."""
+        try:
+            await self._camera.stop_talkback()
+        finally:
+            await self._camera.stop_livestream()
 
     async def play_stream(self, reader: asyncio.StreamReader) -> None:
         """Forward a live AAC/ADTS byte stream to the camera speaker."""
         async with self._play_lock:
-            await self._camera.start_talkback()
-
+            await self.start()
             try:
-                await self._wait_until_started()
-
                 buffer = b""
-
                 while True:
                     chunk = await reader.read(1024)
 
                     if not chunk:
                         break
-
                     buffer += chunk
 
                     while True:
@@ -155,9 +162,9 @@ class TalkbackSession:
                         await self._camera.send_talkback_audio(frame)
             finally:
                 try:
-                    await self._camera.stop_talkback()
+                    await self.stop()
                 except Exception:
-                    _LOGGER.exception("Unable to stop Eufy talkback")
+                    _LOGGER.exception("Unable to stop Eufy talkback session")
 
     async def stream_wav_file(self, file_path: Path) -> None:
         """Encode a WAV file to AAC/ADTS using FFmpeg and stream it live."""
