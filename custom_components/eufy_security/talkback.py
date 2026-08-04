@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import asyncio
-import contextlib
-import shutil
-from .eufy_security_api.camera import StreamStatus
 from collections.abc import Iterator
+import contextlib
 import logging
 from pathlib import Path
+import shutil
 from typing import Any
+
+from .eufy_security_api.camera import StreamStatus
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -98,6 +99,7 @@ class TalkbackSession:
         """Initialize the player with the API camera object."""
         self._camera = camera
         self._play_lock = asyncio.Lock()
+        self._started_livestream = False
 
     async def play_file(self, file_path: Path) -> None:
         """Play an AAC/ADTS file through a Eufy camera speaker."""
@@ -129,18 +131,24 @@ class TalkbackSession:
 
     async def start(self) -> None:
         """Start the livestream and talkback session."""
-        if self._camera.stream_status != StreamStatus.STREAMING:
+        self._started_livestream = (
+            self._camera.stream_status != StreamStatus.STREAMING
+        )
+
+        if self._started_livestream:
             await self._camera.start_livestream()
 
         await self._camera.start_talkback()
         await self._wait_until_started()
 
     async def stop(self) -> None:
-        """Stop the talkback and livestream session."""
+        """Stop talkback and any livestream started by this session."""
         try:
             await self._camera.stop_talkback()
         finally:
-            await self._camera.stop_livestream()
+            if self._started_livestream:
+                await self._camera.stop_livestream()
+                self._started_livestream = False
 
     async def play_stream(self, reader: asyncio.StreamReader) -> None:
         """Forward a live AAC/ADTS byte stream to the camera speaker."""
