@@ -48,6 +48,7 @@ class Schema(Enum):
     START_TALKBACK_SERVICE_SCHEMA = make_entity_service_schema({})
     STOP_TALKBACK_SERVICE_SCHEMA = make_entity_service_schema({})
     PLAY_TALKBACK_FILE_SERVICE_SCHEMA = make_entity_service_schema({vol.Required("filename"): cv.string,})
+    STREAM_TALKBACK_WAV_SERVICE_SCHEMA = make_entity_service_schema({vol.Required("filename"): cv.string,})
     CHIME_SERVICE_SCHEMA = make_entity_service_schema({vol.Required("ringtone"): cv.Number})
     SNOOZE = make_entity_service_schema(
         {

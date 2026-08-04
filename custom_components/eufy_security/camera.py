@@ -71,6 +71,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
     platform.async_register_entity_service("start_talkback",Schema.START_TALKBACK_SERVICE_SCHEMA.value,"_async_start_talkback",)
     platform.async_register_entity_service("stop_talkback",Schema.STOP_TALKBACK_SERVICE_SCHEMA.value,"_async_stop_talkback",)
     platform.async_register_entity_service("play_talkback_file",Schema.PLAY_TALKBACK_FILE_SERVICE_SCHEMA.value,"_async_play_talkback_file",)
+    platform.async_register_entity_service("stream_talkback_wav",Schema.STREAM_TALKBACK_WAV_SERVICE_SCHEMA.value,"_async_stream_talkback_wav",)
     platform.async_register_entity_service("snooze", Schema.SNOOZE.value, "_snooze")
 
 class EufySecurityCamera(Camera, EufySecurityEntity):
@@ -300,6 +301,40 @@ class EufySecurityCamera(Camera, EufySecurityEntity):
                 f"Invalid AAC/ADTS talkback file: {err}"
             ) from err
         except TimeoutError as err:
+            raise HomeAssistantError(str(err)) from err
+
+    async def _async_stream_talkback_wav(self, filename: str) -> None:
+        """Stream a WAV file through FFmpeg to the camera speaker."""
+        safe_filename = Path(filename).name
+
+        if safe_filename != filename:
+            raise HomeAssistantError(
+                "The filename must not contain folders"
+            )
+
+        if Path(safe_filename).suffix.lower() != ".wav":
+            raise HomeAssistantError(
+                "The talkback test file must use the .wav extension"
+            )
+
+        file_path = Path(
+            self.hass.config.path(
+                "www",
+                "eufy_talkback",
+                safe_filename,
+            )
+        )
+
+        if not file_path.is_file():
+            raise HomeAssistantError(
+                f"Talkback file does not exist: {file_path}"
+            )
+
+        session = TalkbackSession(self.product)
+
+        try:
+            await session.stream_wav_file(file_path)
+        except RuntimeError as err:
             raise HomeAssistantError(str(err)) from err
 
     async def _snooze(self, snooze_time: int, snooze_chime: bool, snooze_motion: bool, snooze_homebase: bool) -> None:

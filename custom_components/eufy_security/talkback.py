@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
+import shutil
+
 from collections.abc import Iterator
 import logging
 from pathlib import Path
@@ -155,6 +158,44 @@ class TalkbackSession:
                     await self._camera.stop_talkback()
                 except Exception:
                     _LOGGER.exception("Unable to stop Eufy talkback")
+
+    async def stream_wav_file(self, file_path: Path) -> None:
+        """Encode a WAV file to AAC/ADTS using FFmpeg and stream it live."""
+
+        ffmpeg = shutil.which("ffmpeg")
+        if ffmpeg is None:
+            raise RuntimeError("ffmpeg executable not found")
+
+        process = await asyncio.create_subprocess_exec(
+            ffmpeg,
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-i",
+            str(file_path),
+            "-ac",
+            "1",
+            "-ar",
+            "16000",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "20k",
+            "-f",
+            "adts",
+            "pipe:1",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+
+        try:
+            assert process.stdout is not None
+            await self.play_stream(process.stdout)
+        finally:
+            with contextlib.suppress(ProcessLookupError):
+                process.kill()
+
+            await process.wait()
 
     async def _wait_until_started(self) -> None:
         """Wait until the websocket server reports active talkback."""
