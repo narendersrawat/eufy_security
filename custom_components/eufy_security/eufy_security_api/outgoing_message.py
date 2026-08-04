@@ -28,6 +28,7 @@ class OutgoingMessageToParameter(Enum):
     level = "log_level"
     ringtone = "ringtone"
     pin = "pin"
+    buffer = "buffer"
 
 
 class OutgoingMessageType(Enum):
@@ -78,6 +79,7 @@ class OutgoingMessageType(Enum):
     start_talkback = {MessageField.DUMMY: auto(), MessageField.DOMAIN: EventSourceType.device}
     stop_talkback = {MessageField.DUMMY: auto(), MessageField.DOMAIN: EventSourceType.device}
     is_talkback_ongoing = {MessageField.DUMMY: auto(), MessageField.DOMAIN: EventSourceType.device}
+    talkback_audio_data = {MessageField.DUMMY: auto(),MessageField.DOMAIN: EventSourceType.device,MessageField.BUFFER: None,}
     get_voices = {MessageField.DUMMY: auto(), MessageField.DOMAIN: EventSourceType.device}
     quick_response = {MessageField.DUMMY: auto(), MessageField.DOMAIN: EventSourceType.device, MessageField.VOICE_ID: None}
     snooze = {

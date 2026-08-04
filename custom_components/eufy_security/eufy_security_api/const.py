@@ -91,6 +91,9 @@ class MessageField(Enum):
     MAX_RESULTS = "maxResults"
     DEVICE_SERIAL_NO = "deviceSN"
 
+    #talk back
+    BUFFER = "buffer"
+    TALKBACK_ONGOING = "talkbackOngoing"
 
 # https://bropat.github.io/eufy-security-ws/#/api_events?id=device-level-events
 class EventNameToHandler(Enum):

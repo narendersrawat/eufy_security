@@ -1,0 +1,129 @@
+"""Eufy talkback audio helpers."""
+
+from __future__ import annotations
+
+import asyncio
+from collections.abc import Iterator
+import logging
+from pathlib import Path
+from typing import Any
+
+_LOGGER = logging.getLogger(__name__)
+
+# AAC-LC uses 1024 samples per frame.
+# At 16 kHz, each frame represents exactly 64 milliseconds.
+AAC_FRAME_DURATION_SECONDS = 1024 / 16000
+
+TALKBACK_START_TIMEOUT_SECONDS = 5.0
+
+
+class InvalidAdtsStreamError(ValueError):
+    """Raised when a file is not a valid AAC/ADTS stream."""
+
+
+def iter_adts_frames(data: bytes) -> Iterator[bytes]:
+    """Yield complete AAC frames, including each ADTS header."""
+    offset = 0
+    data_length = len(data)
+
+    while offset < data_length:
+        if data_length - offset < 7:
+            raise InvalidAdtsStreamError(
+                f"Incomplete ADTS header at byte {offset}"
+            )
+
+        # ADTS syncword is twelve 1 bits: 0xFFF.
+        if data[offset] != 0xFF or (data[offset + 1] & 0xF6) != 0xF0:
+            raise InvalidAdtsStreamError(
+                f"Invalid ADTS syncword at byte {offset}"
+            )
+
+        protection_absent = data[offset + 1] & 0x01
+        header_length = 7 if protection_absent else 9
+
+        frame_length = (
+            ((data[offset + 3] & 0x03) << 11)
+            | (data[offset + 4] << 3)
+            | ((data[offset + 5] & 0xE0) >> 5)
+        )
+
+        if frame_length < header_length:
+            raise InvalidAdtsStreamError(
+                f"Invalid ADTS frame length {frame_length} at byte {offset}"
+            )
+
+        frame_end = offset + frame_length
+        if frame_end > data_length:
+            raise InvalidAdtsStreamError(
+                f"Incomplete ADTS frame at byte {offset}"
+            )
+
+        yield data[offset:frame_end]
+        offset = frame_end
+
+
+class TalkbackFilePlayer:
+    """Play an AAC/ADTS file through a Eufy camera speaker."""
+
+    def __init__(self, camera: Any) -> None:
+        """Initialize the player with the API camera object."""
+        self._camera = camera
+        self._play_lock = asyncio.Lock()
+
+    async def play(self, file_path: Path) -> None:
+        """Start talkback and send a prerecorded AAC/ADTS file."""
+        async with self._play_lock:
+            audio_data = await asyncio.to_thread(file_path.read_bytes)
+            frames = list(iter_adts_frames(audio_data))
+
+            if not frames:
+                raise InvalidAdtsStreamError(
+                    f"No AAC/ADTS frames found in {file_path}"
+                )
+
+            _LOGGER.debug(
+                "Starting talkback playback: %s frames from %s",
+                len(frames),
+                file_path,
+            )
+
+            await self._camera.start_talkback()
+
+            try:
+                await self._wait_until_started()
+                await self._send_frames(frames)
+            finally:
+                try:
+                    await self._camera.stop_talkback()
+                except Exception:
+                    _LOGGER.exception("Unable to stop Eufy talkback")
+
+    async def _wait_until_started(self) -> None:
+        """Wait until the websocket server reports active talkback."""
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + TALKBACK_START_TIMEOUT_SECONDS
+
+        while loop.time() < deadline:
+            if await self._camera.is_talkback_ongoing():
+                return
+
+            await asyncio.sleep(0.1)
+
+        raise TimeoutError(
+            "Eufy talkback did not start within "
+            f"{TALKBACK_START_TIMEOUT_SECONDS} seconds"
+        )
+
+    async def _send_frames(self, frames: list[bytes]) -> None:
+        """Send AAC frames at their natural 16-kHz playback rate."""
+        loop = asyncio.get_running_loop()
+        next_frame_time = loop.time()
+
+        for frame in frames:
+            await self._camera.send_talkback_audio(frame)
+
+            next_frame_time += AAC_FRAME_DURATION_SECONDS
+            delay = next_frame_time - loop.time()
+
+            if delay > 0:
+                await asyncio.sleep(delay)

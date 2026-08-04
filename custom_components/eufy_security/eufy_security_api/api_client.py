@@ -239,17 +239,25 @@ class ApiClient:
         """Process stop p2p livestream call"""
         await self._send_message_get_response(OutgoingMessage(OutgoingMessageType.stop_livestream, serial_no=serial_no))
 
-    async def start_talkback(self, product_type: ProductType, serial_no: str) -> None:
-        """Process start talkback call"""
+    async def start_talkback(self,product_type: ProductType,serial_no: str,) -> None:
+        """Process start talkback call."""
         await self._send_message_get_response(OutgoingMessage(OutgoingMessageType.start_talkback,serial_no=serial_no,))
 
-    async def stop_talkback(self, product_type: ProductType, serial_no: str) -> None:
-        """Process stop talkback call"""
+    async def stop_talkback(self,product_type: ProductType,serial_no: str,) -> None:
+        """Process stop talkback call."""
         await self._send_message_get_response(OutgoingMessage(OutgoingMessageType.stop_talkback,serial_no=serial_no,))
 
     async def is_talkback_ongoing(self,product_type: ProductType,serial_no: str,) -> bool:
+        """Return whether talkback is active."""
         result = await self._send_message_get_response(OutgoingMessage(OutgoingMessageType.is_talkback_ongoing,serial_no=serial_no,))
-        return result["talkbackOngoing"]
+        return bool(result[MessageField.TALKBACK_ONGOING.value])
+
+    async def send_talkback_audio(self,product_type: ProductType,serial_no: str,audio_data: bytes,) -> None:
+        """Send one encoded audio buffer to an active talkback session."""
+        if not audio_data:
+            return
+        node_buffer = {"type": "Buffer","data": list(audio_data),}
+        await self._send_message_get_response(OutgoingMessage(OutgoingMessageType.talkback_audio_data,serial_no=serial_no,buffer=node_buffer,))
 
     async def _get_is_p2p_streaming(self, product_type: ProductType, serial_no: str) -> bool:
         result = await self._send_message_get_response(OutgoingMessage(OutgoingMessageType.is_livestreaming, serial_no=serial_no))

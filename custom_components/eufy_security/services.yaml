@@ -249,6 +249,25 @@ stop_talkback:
       domain: camera
       integration: eufy_security
 
+play_talkback_file:
+  name: Play talkback audio file
+  description: >-
+    Play a prerecorded mono AAC/ADTS file through the selected Eufy
+    camera speaker. The file must be stored under
+    /config/www/eufy_talkback.
+  target:
+    entity:
+      domain: camera
+      integration: eufy_security
+  fields:
+    filename:
+      name: Filename
+      description: AAC/ADTS filename located in /config/www/eufy_talkback.
+      required: true
+      example: test.aac
+      selector:
+        text:
+
 reset_alarm:
   name: Reset Alarm for Alarm Panel
   description: Reset Alarm for Alarm Panel

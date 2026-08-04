@@ -226,15 +226,19 @@ class Camera(Device):
 
     async def start_talkback(self) -> None:
         """Start talkback on camera."""
-        await self.api.start_talkback(self.product_type, self.serial_no)
+        await self.api.start_talkback(self.product_type,self.serial_no,)
 
     async def stop_talkback(self) -> None:
         """Stop talkback on camera."""
-        await self.api.stop_talkback(self.product_type, self.serial_no)
+        await self.api.stop_talkback(self.product_type,self.serial_no,)
 
     async def is_talkback_ongoing(self) -> bool:
         """Return whether talkback is active."""
         return await self.api.is_talkback_ongoing(self.product_type,self.serial_no,)
+
+    async def send_talkback_audio(self, audio_data: bytes) -> None:
+        """Send encoded audio to the active talkback session."""
+        await self.api.send_talkback_audio(self.product_type,self.serial_no,audio_data,)
 
     @property
     def is_rtsp_supported(self) -> bool:
