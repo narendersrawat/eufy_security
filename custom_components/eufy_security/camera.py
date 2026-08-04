@@ -86,10 +86,24 @@ class EufySecurityCamera(Camera, EufySecurityEntity):
 
         # ffmpeg entities
         self.ffmpeg = self.coordinator.hass.data[DATA_FFMPEG]
+        self._stream_source_lock = asyncio.Lock()
 
     async def stream_source(self) -> str:
-        if self.is_streaming is False:
-            return None
+        async with self._stream_source_lock:
+            if self.is_streaming is False:
+                if self.product.stream_provider == StreamProvider.RTSP:
+                    started = await self.product.start_rtsp_livestream()
+                else:
+                    started = await self.product.start_livestream()
+
+                if started is False:
+                    return None
+
+                await wait_for_value_to_equal(
+                    self.product.__dict__,
+                    "stream_status",
+                    StreamStatus.STREAMING,
+                )
         return self.product.stream_url
 
     async def handle_async_mjpeg_stream(self, request):
