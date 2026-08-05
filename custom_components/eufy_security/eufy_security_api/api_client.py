@@ -256,6 +256,7 @@ class ApiClient:
         """Send one encoded audio buffer to an active talkback session."""
         if not audio_data:
             return
+        _LOGGER.warning("Sending talkback_audio_data: serial=%s bytes=%d",serial_no,len(audio_data),)
         node_buffer = {"type": "Buffer","data": list(audio_data),}
         await self._send_message_get_response(OutgoingMessage(OutgoingMessageType.talkback_audio_data,serial_no=serial_no,buffer=node_buffer,))
 
